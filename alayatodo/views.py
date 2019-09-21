@@ -76,13 +76,14 @@ def todos_POST():
     if not session.get('logged_in'):
         return redirect('/login')
     if not request.form.get('description'):
-        flash('Description is required.', category='error')
+        flash('Description is required.', category='danger')
         return redirect('/todo')
     g.db.execute(
         "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
         % (session['user']['id'], request.form.get('description', ''))
     )
     g.db.commit()
+    flash('You added todo', category='success')
     return redirect('/todo')
 
 
@@ -92,6 +93,7 @@ def todo_delete(id):
         return redirect('/login')
     g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
     g.db.commit()
+    flash('You deleted todo', category='success')
     return redirect('/todo')
 
 
