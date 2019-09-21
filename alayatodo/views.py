@@ -1,4 +1,3 @@
-from alayatodo import app
 from flask import (
     g,
     redirect,
@@ -6,6 +5,8 @@ from flask import (
     request,
     session,
     flash)
+
+from alayatodo import app
 
 
 @app.route('/')
@@ -81,5 +82,19 @@ def todo_delete(id):
     if not session.get('logged_in'):
         return redirect('/login')
     g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
+    g.db.commit()
+    return redirect('/todo')
+
+
+@app.route('/todo/done/<id>', methods=['POST'])
+def todo_done(id):
+    g.db.execute("UPDATE todos SET is_completed=1 WHERE id ='%s'" % id)
+    g.db.commit()
+    return redirect('/todo')
+
+
+@app.route('/todo/undone/<id>', methods=['POST'])
+def todo_undone(id):
+    g.db.execute("UPDATE todos SET is_completed=0 WHERE id ='%s'" % id)
     g.db.commit()
     return redirect('/todo')

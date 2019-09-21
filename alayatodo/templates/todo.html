@@ -14,6 +14,20 @@
                     <button type="submit" class="btn btn-xs btn-danger"><span class="glyphicon glyphicon-remove glyphicon-white"></span></button>
                 </form>
             </td>
+            {% if not todo.is_completed %}
+                        <td>
+                            <form method="post" action="{{ url_for('todo_done', id=todo.id) }}">
+                                <button type="submit"><span class="glyphicon glyphicon-minus"></span></button>
+                            </form>
+                        </td>
+                    {% else %}
+                        <td>
+                            <form method="post" action="{{ url_for('todo_undone', id=todo.id) }}">
+                                <button type="submit"><span class="glyphicon glyphicon-ok"></span></button>
+                            </form>
+                        </td>
+
+                {% endif %}
         </tr>
     </table>
 </div>
