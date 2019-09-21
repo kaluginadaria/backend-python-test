@@ -16,13 +16,13 @@
             </td>
             {% if not todo.is_completed %}
                         <td>
-                            <form method="post" action="{{ url_for('todo_done', id=todo.id) }}">
+                            <form method="post" action="{{ url_for('done', id=todo.id) }}">
                                 <button type="submit"><span class="glyphicon glyphicon-minus"></span></button>
                             </form>
                         </td>
                     {% else %}
                         <td>
-                            <form method="post" action="{{ url_for('todo_undone', id=todo.id) }}">
+                            <form method="post" action="{{ url_for('undone', id=todo.id) }}">
                                 <button type="submit"><span class="glyphicon glyphicon-ok"></span></button>
                             </form>
                         </td>

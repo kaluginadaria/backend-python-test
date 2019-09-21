@@ -1,13 +1,32 @@
+from functools import wraps
+
 from flask import (
     redirect,
     render_template,
     request,
     session,
-    flash, abort)
+    flash, abort, url_for)
 
 from alayatodo import app, db
 from alayatodo.models import User, Todo
 from alayatodo.schemas import todo_schema, user_schema
+
+
+def get_user_todo(obj_id):
+    todo = Todo.query.filter_by(id=obj_id, user_id=session['user']['id']).first()
+    if not todo:
+        abort(404)
+    return todo
+
+
+def login_required(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login', next=request.url))
+        return func(*args, **kwargs)
+
+    return decorated_function
 
 
 @app.route('/')
@@ -38,7 +57,6 @@ def login_POST():
         return redirect('/login')
 
 
-
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
@@ -47,33 +65,31 @@ def logout():
 
 
 @app.route('/todo/<id>', methods=['GET'])
+@login_required
 def todo(id):
-    todo = Todo.query.get(id)
+    todo = get_user_todo(id)
     return render_template('todo.html', todo=todo)
 
 
 @app.route('/todo/<id>/json', methods=['GET'])
+@login_required
 def todo_json(id):
-    todo = Todo.query.get(id)
-    if not todo:
-        abort(404)
+    todo = get_user_todo(id)
     return todo_schema.dump(todo)
 
 
 @app.route('/todo', methods=['GET'])
 @app.route('/todo/', methods=['GET'])
+@login_required
 def todos():
-    if not session.get('logged_in'):
-        return redirect('/login')
-    todos = Todo.query.all()
+    todos = Todo.query.filter_by(user_id=session['user']['id'])
     return render_template('todos.html', todos=todos)
 
 
 @app.route('/todo', methods=['POST'])
 @app.route('/todo/', methods=['POST'])
+@login_required
 def todos_POST():
-    if not session.get('logged_in'):
-        return redirect('/login')
     if not request.form.get('description'):
         flash('Description is required.', category='danger')
         return redirect('/todo')
@@ -85,26 +101,21 @@ def todos_POST():
 
 
 @app.route('/todo/<id>', methods=['POST'])
+@login_required
 def todo_delete(id):
-    if not session.get('logged_in'):
-        return redirect('/login')
-    Todo.query.filter_by(id=id).delete()
+    todo = get_user_todo(id)
+    db.session.delete(todo)
     db.session.commit()
     flash('You deleted todo', category='success')
     return redirect('/todo')
 
 
-@app.route('/todo/done/<id>', methods=['POST'])
-def todo_done(id):
-    todo = Todo.query.filter_by(id=id).first()
-    todo.is_completed = 1
-    db.session.commit()
-    return redirect('/todo')
-
-
-@app.route('/todo/undone/<id>', methods=['POST'])
-def todo_undone(id):
-    todo = Todo.query.filter_by(id=id).first()
-    todo.is_completed = 0
+@app.route('/todo/undone/<id>', endpoint='undone', methods=["POST"])
+@app.route('/todo/done/<id>', endpoint='done', methods=["POST"])
+@login_required
+def todo_completion(id):
+    is_completed = 1 if request.endpoint == 'done' else 0
+    todo = get_user_todo(id)
+    todo.is_completed = is_completed
     db.session.commit()
     return redirect('/todo')
