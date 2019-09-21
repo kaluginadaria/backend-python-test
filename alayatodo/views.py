@@ -1,12 +1,13 @@
 from flask import (
-    g,
     redirect,
     render_template,
     request,
     session,
-    flash, abort, jsonify)
+    flash, abort)
 
-from alayatodo import app
+from alayatodo import app, db
+from alayatodo.models import User, Todo
+from alayatodo.schemas import todo_schema, user_schema
 
 
 @app.route('/')
@@ -26,15 +27,16 @@ def login_POST():
     username = request.form.get('username')
     password = request.form.get('password')
 
-    sql = "SELECT * FROM users WHERE username = '%s' AND password = '%s'";
-    cur = g.db.execute(sql % (username, password))
-    user = cur.fetchone()
+    user = User.query.filter_by(username=username, password=password).first()
     if user:
-        session['user'] = dict(user)
+        session['user'] = user_schema.dump(user).data
         session['logged_in'] = True
         return redirect('/todo')
+    else:
+        flash('Sign up to create your todos')
+        # todo redirect to signup page
+        return redirect('/login')
 
-    return redirect('/login')
 
 
 @app.route('/logout')
@@ -46,18 +48,16 @@ def logout():
 
 @app.route('/todo/<id>', methods=['GET'])
 def todo(id):
-    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
-    todo = cur.fetchone()
+    todo = Todo.query.get(id)
     return render_template('todo.html', todo=todo)
 
 
 @app.route('/todo/<id>/json', methods=['GET'])
 def todo_json(id):
-    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
-    todo = cur.fetchone()
+    todo = Todo.query.get(id)
     if not todo:
         abort(404)
-    return jsonify(dict(todo))
+    return todo_schema.dump(todo)
 
 
 @app.route('/todo', methods=['GET'])
@@ -65,8 +65,7 @@ def todo_json(id):
 def todos():
     if not session.get('logged_in'):
         return redirect('/login')
-    cur = g.db.execute("SELECT * FROM todos")
-    todos = cur.fetchall()
+    todos = Todo.query.all()
     return render_template('todos.html', todos=todos)
 
 
@@ -78,11 +77,9 @@ def todos_POST():
     if not request.form.get('description'):
         flash('Description is required.', category='danger')
         return redirect('/todo')
-    g.db.execute(
-        "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
-        % (session['user']['id'], request.form.get('description', ''))
-    )
-    g.db.commit()
+    new_todo = Todo(user_id=session['user']['id'], description=request.form.get('description'))
+    db.session.add(new_todo)
+    db.session.commit()
     flash('You added todo', category='success')
     return redirect('/todo')
 
@@ -91,21 +88,23 @@ def todos_POST():
 def todo_delete(id):
     if not session.get('logged_in'):
         return redirect('/login')
-    g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
-    g.db.commit()
+    Todo.query.filter_by(id=id).delete()
+    db.session.commit()
     flash('You deleted todo', category='success')
     return redirect('/todo')
 
 
 @app.route('/todo/done/<id>', methods=['POST'])
 def todo_done(id):
-    g.db.execute("UPDATE todos SET is_completed=1 WHERE id ='%s'" % id)
-    g.db.commit()
+    todo = Todo.query.filter_by(id=id).first()
+    todo.is_completed = 1
+    db.session.commit()
     return redirect('/todo')
 
 
 @app.route('/todo/undone/<id>', methods=['POST'])
 def todo_undone(id):
-    g.db.execute("UPDATE todos SET is_completed=0 WHERE id ='%s'" % id)
-    g.db.commit()
+    todo = Todo.query.filter_by(id=id).first()
+    todo.is_completed = 0
+    db.session.commit()
     return redirect('/todo')
