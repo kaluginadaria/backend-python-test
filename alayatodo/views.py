@@ -4,7 +4,7 @@ from flask import (
     render_template,
     request,
     session,
-    flash)
+    flash, abort, jsonify)
 
 from alayatodo import app
 
@@ -49,6 +49,15 @@ def todo(id):
     cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
     todo = cur.fetchone()
     return render_template('todo.html', todo=todo)
+
+
+@app.route('/todo/<id>/json', methods=['GET'])
+def todo_json(id):
+    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
+    todo = cur.fetchone()
+    if not todo:
+        abort(404)
+    return jsonify(dict(todo))
 
 
 @app.route('/todo', methods=['GET'])
