@@ -1,2 +1,2 @@
 ALTER TABLE todos
-ADD COLUMN is_completed INTEGER;
+ADD COLUMN is_completed INTEGER DEFAULT 0;

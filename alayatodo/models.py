@@ -1,3 +1,5 @@
+import datetime
+
 from sqlalchemy import Column, Integer, String
 
 from alayatodo import db
@@ -21,6 +23,8 @@ class Todo(db.Model):
                         nullable=False)
     description = Column(String(256), nullable=False)
     is_completed = Column(Integer, default=0)
+    created_dt = Column(db.DateTime, nullable=False,
+                        default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return '<Todo %r>' % (self.description)

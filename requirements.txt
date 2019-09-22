@@ -3,3 +3,4 @@ Jinja2
 docopt
 flask_sqlalchemy
 flask-marshmallow
+flask-paginate

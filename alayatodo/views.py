@@ -6,6 +6,7 @@ from flask import (
     request,
     session,
     flash, abort, url_for)
+from flask_paginate import get_page_parameter, Pagination
 
 from alayatodo import app, db
 from alayatodo.models import User, Todo
@@ -82,8 +83,14 @@ def todo_json(id):
 @app.route('/todo/', methods=['GET'])
 @login_required
 def todos():
-    todos = Todo.query.filter_by(user_id=session['user']['id'])
-    return render_template('todos.html', todos=todos)
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    todos_page = Todo.query.filter_by(user_id=session['user']['id'])\
+        .order_by(Todo.created_dt.desc())\
+        .paginate(page=page, per_page=5)
+    pagination = Pagination(page=page, per_page=5, css_framework='foundation',
+                            total=todos_page.total)
+
+    return render_template('todos.html', todos=todos_page.items, pagination=pagination, )
 
 
 @app.route('/todo', methods=['POST'])
