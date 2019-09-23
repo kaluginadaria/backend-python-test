@@ -1,18 +1,19 @@
+from environs import Env
 from flask import Flask
 from flask_bcrypt import Bcrypt
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
 
-# configuration
-DATABASE = '/tmp/alayatodo.db'
-DEBUG = True
-SECRET_KEY = 'development key'
-USERNAME = 'admin'
-PASSWORD = 'default'
+env = Env()
+Env.read_env(env.str('ENV_PATH', '.env'))
+
+DATABASE = env.str('DATABASE')
+DEBUG = env.bool('DEBUG', default=True)
+SECRET_KEY = env.str('SECRET_KEY')
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % DATABASE
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
 bcrypt = Bcrypt(app)

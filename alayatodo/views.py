@@ -72,7 +72,7 @@ def signup_POST():
         flash('This username is already in use', category='danger')
         return redirect('/signup')
     if username and password:
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        hashed_password = bcrypt.generate_password_hash(password)
         new_user = User(username=username, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
