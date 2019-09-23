@@ -8,7 +8,7 @@ from flask import (
     flash, abort, url_for)
 from flask_paginate import get_page_parameter, Pagination
 
-from alayatodo import app, db
+from alayatodo import app, db, bcrypt
 from alayatodo.models import User, Todo
 from alayatodo.schemas import todo_schema, user_schema
 
@@ -42,20 +42,44 @@ def login():
     return render_template('login.html')
 
 
+@app.route('/signup', methods=['GET'])
+def signup():
+    return render_template('signup.html')
+
+
 @app.route('/login', methods=['POST'])
 def login_POST():
     username = request.form.get('username')
     password = request.form.get('password')
 
-    user = User.query.filter_by(username=username, password=password).first()
-    if user:
+    user = User.query.filter_by(username=username).first()
+
+    if user and bcrypt.check_password_hash(user.password, password):
         session['user'] = user_schema.dump(user).data
         session['logged_in'] = True
         return redirect('/todo')
     else:
-        flash('Sign up to create your todos')
-        # todo redirect to signup page
+        flash('Wrong username and/or password', category='danger')
         return redirect('/login')
+
+
+@app.route('/signup', methods=['POST'])
+def signup_POST():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    user = User.query.filter_by(username=username).first()
+    if user:
+        flash('This username is already in use', category='danger')
+        return redirect('/signup')
+    if username and password:
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(username=username, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        if new_user:
+            session['user'] = user_schema.dump(new_user).data
+            session['logged_in'] = True
+            return redirect('/todo')
 
 
 @app.route('/logout')
@@ -84,8 +108,8 @@ def todo_json(id):
 @login_required
 def todos():
     page = request.args.get(get_page_parameter(), type=int, default=1)
-    todos_page = Todo.query.filter_by(user_id=session['user']['id'])\
-        .order_by(Todo.created_dt.desc())\
+    todos_page = Todo.query.filter_by(user_id=session['user']['id']) \
+        .order_by(Todo.created_dt.desc()) \
         .paginate(page=page, per_page=5)
     pagination = Pagination(page=page, per_page=5, css_framework='foundation',
                             total=todos_page.total)
