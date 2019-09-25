@@ -30,10 +30,12 @@ Credentials:
 ### Installation
 **/!\ You need to fork this repository. See [How to submit your work?](#how-to-submit-your-work)**
 ```sh
-virtualenv .
-bin/pip install -r requirements.txt
-bin/python main.py initdb
-bin/python main.py
+virtualenv -p python2.7 env 
+source env/bin/activate
+pip install -r requirements.txt
+python main.py initdb
+python main.py migrate
+python main.py
 ```
 
 ### Instructions

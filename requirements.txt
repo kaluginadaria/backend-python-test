@@ -5,3 +5,4 @@ flask_sqlalchemy
 flask-marshmallow
 flask-paginate
 flask-bcrypt
+environs
